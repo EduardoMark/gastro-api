@@ -1,0 +1,26 @@
+services:
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 3000:3000
+    volumes:
+      - ./:/app
+    depends_on:
+      - db
+  
+  db:
+    image: postgres:17.6
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: gastro_api
+    restart: always
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:
