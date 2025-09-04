@@ -11,7 +11,7 @@ import (
 
 type Service interface {
 	Authenticate(ctx context.Context, email, password string) (*User, error)
-	Create(ctx context.Context, name, email, password string) error
+	Create(ctx context.Context, name, email, password string, role Role) error
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	ChangePassword(ctx context.Context, userID uuid.UUID, newPassoword string) error
 }
@@ -42,7 +42,7 @@ func (s *userService) Authenticate(ctx context.Context, email, password string) 
 	return user, nil
 }
 
-func (s *userService) Create(ctx context.Context, name, email, password string) error {
+func (s *userService) Create(ctx context.Context, name, email, password string, role Role) error {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
 		return fmt.Errorf("failed to hash password: %v", err)
@@ -52,6 +52,14 @@ func (s *userService) Create(ctx context.Context, name, email, password string) 
 		Name:         name,
 		Email:        email,
 		PasswordHash: string(passwordHash),
+	}
+
+	if role == RoleAdmin {
+		user.Role = RoleAdmin
+	}
+
+	if role == RoleClient {
+		user.Role = RoleClient
 	}
 
 	if err := s.r.CreateUser(ctx, &user); err != nil {

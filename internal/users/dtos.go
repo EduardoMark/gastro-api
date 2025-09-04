@@ -12,6 +12,7 @@ type SignupRequest struct {
 	Name     string `json:"name" validate:"required,min=3,max=100"`
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=8,max=100"`
+	Role     Role   `json:"role" validate:"required"`
 }
 
 func (r SignupRequest) Validate() error {
@@ -31,6 +32,11 @@ func (r SignupRequest) Validate() error {
 			}
 		}
 	}
+
+	if r.Role != RoleAdmin && r.Role != RoleClient {
+		return fmt.Errorf("field role must be a valid role (admin or client)")
+	}
+
 	return nil
 }
 

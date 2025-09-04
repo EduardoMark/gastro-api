@@ -1,12 +1,12 @@
 package users
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 
 	"github.com/EduardoMark/gastro-api/internal/auth"
 	"github.com/EduardoMark/gastro-api/internal/middleware"
+	"github.com/EduardoMark/gastro-api/pkg/jsonutils"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -48,18 +48,16 @@ func (h *UserHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	logrus.Info("Signup handler running...")
 	ctx := r.Context()
 
-	var body SignupRequest
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{
+	body, err := jsonutils.DecodeJson[SignupRequest](r)
+	if err != nil {
+		jsonutils.EncodeJson(w, http.StatusBadRequest, map[string]string{
 			"error": "invalid request body",
 		})
 		return
 	}
 
 	if err := body.Validate(); err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		json.NewEncoder(w).Encode(map[string]string{
+		jsonutils.EncodeJson(w, http.StatusUnprocessableEntity, map[string]string{
 			"error": err.Error(),
 		})
 		return
@@ -70,24 +68,22 @@ func (h *UserHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		body.Name,
 		body.Email,
 		body.Password,
+		body.Role,
 	); err != nil {
 		if errors.Is(err, ErrEmailAlreadyExists) {
-			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(map[string]string{
+			jsonutils.EncodeJson(w, http.StatusConflict, map[string]string{
 				"error": "email already exists",
 			})
 			return
 		}
 
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{
+		jsonutils.EncodeJson(w, http.StatusInternalServerError, map[string]string{
 			"error": "unexpected internal server error",
 		})
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{
+	jsonutils.EncodeJson(w, http.StatusCreated, map[string]string{
 		"success": "user created with success",
 	})
 }
@@ -96,18 +92,16 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	logrus.Info("Login handler running...")
 	ctx := r.Context()
 
-	var body LoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{
+	body, err := jsonutils.DecodeJson[LoginRequest](r)
+	if err != nil {
+		jsonutils.EncodeJson(w, http.StatusBadRequest, map[string]string{
 			"error": "invalid body request",
 		})
 		return
 	}
 
 	if err := body.Validate(); err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		json.NewEncoder(w).Encode(map[string]string{
+		jsonutils.EncodeJson(w, http.StatusUnprocessableEntity, map[string]string{
 			"error": err.Error(),
 		})
 		return
@@ -116,39 +110,34 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	user, err := h.s.Authenticate(ctx, body.Email, body.Password)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
-			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(map[string]string{
+			jsonutils.EncodeJson(w, http.StatusNotFound, map[string]string{
 				"error": "user not found",
 			})
 			return
 		}
 
 		if errors.Is(err, ErrInvalidCredentials) {
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{
+			jsonutils.EncodeJson(w, http.StatusBadRequest, map[string]string{
 				"error": "invalid credentials",
 			})
 			return
 		}
 
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{
+		jsonutils.EncodeJson(w, http.StatusInternalServerError, map[string]string{
 			"error": "unexpected internal server error",
 		})
 		return
 	}
 
-	token, err := h.authService.New(user.ID.String())
+	token, err := h.authService.New(user.ID.String(), string(user.Role))
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{
+		jsonutils.EncodeJson(w, http.StatusInternalServerError, map[string]string{
 			"error": "unexpected internal server error",
 		})
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
+	jsonutils.EncodeJson(w, http.StatusOK, map[string]string{
 		"token": token,
 	})
 }
@@ -160,8 +149,7 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	userIDRaw := ctx.Value(middleware.CtxUserId)
 	userID, ok := userIDRaw.(string)
 	if !ok {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{
+		jsonutils.EncodeJson(w, http.StatusUnauthorized, map[string]string{
 			"error": "invalid user id in context",
 		})
 		return
@@ -169,25 +157,22 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	uid, err := uuid.Parse(userID)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{
+		jsonutils.EncodeJson(w, http.StatusInternalServerError, map[string]string{
 			"error": "invalid user id type uuuid",
 		})
 		return
 	}
 
-	var body ChangePasswordRequest
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{
+	body, err := jsonutils.DecodeJson[ChangePasswordRequest](r)
+	if err != nil {
+		jsonutils.EncodeJson(w, http.StatusBadRequest, map[string]string{
 			"error": "invalid body request",
 		})
 		return
 	}
 
 	if err := body.Validate(); err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		json.NewEncoder(w).Encode(map[string]string{
+		jsonutils.EncodeJson(w, http.StatusUnprocessableEntity, map[string]string{
 			"error": err.Error(),
 		})
 		return
@@ -195,23 +180,20 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.s.ChangePassword(ctx, uid, body.NewPassword); err != nil {
 		if errors.Is(err, ErrSamePassword) {
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{
+			jsonutils.EncodeJson(w, http.StatusBadRequest, map[string]string{
 				"error": "new password cannot be the same as the old password",
 			})
 			return
 		}
 
 		if errors.Is(err, ErrUserNotFound) {
-			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(map[string]string{
+			jsonutils.EncodeJson(w, http.StatusNotFound, map[string]string{
 				"error": "user not found",
 			})
 			return
 		}
 
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{
+		jsonutils.EncodeJson(w, http.StatusInternalServerError, map[string]string{
 			"error": "unexpected internal server error",
 		})
 		return

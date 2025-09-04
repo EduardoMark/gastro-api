@@ -20,12 +20,14 @@ func NewAuthJWTService(env *config.Env) *AuthJWTService {
 
 type Claims struct {
 	UserID string `json:"user_id"`
+	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
-func (a *AuthJWTService) New(userID string) (string, error) {
+func (a *AuthJWTService) New(userID, role string) (string, error) {
 	claims := Claims{
 		UserID: userID,
+		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

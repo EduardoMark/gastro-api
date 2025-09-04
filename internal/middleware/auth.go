@@ -22,6 +22,7 @@ func NewJWTMiddleware(authService *auth.AuthJWTService) *JWTMiddleware {
 type contentKey string
 
 const CtxUserId contentKey = "user_id"
+const CtxUserRole contentKey = "role"
 
 func (m *JWTMiddleware) JWTAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -54,6 +55,7 @@ func (m *JWTMiddleware) JWTAuth(next http.Handler) http.Handler {
 		}
 
 		ctx := context.WithValue(r.Context(), CtxUserId, claims.UserID)
+		ctx = context.WithValue(ctx, CtxUserRole, claims.Role)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
