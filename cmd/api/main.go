@@ -9,6 +9,7 @@ import (
 	"github.com/EduardoMark/gastro-api/internal/auth"
 	"github.com/EduardoMark/gastro-api/internal/config"
 	"github.com/EduardoMark/gastro-api/internal/database"
+	"github.com/EduardoMark/gastro-api/internal/dishes"
 	appmw "github.com/EduardoMark/gastro-api/internal/middleware"
 	"github.com/EduardoMark/gastro-api/internal/users"
 	"github.com/go-chi/chi/v5"
@@ -34,10 +35,15 @@ func main() {
 	userService := users.NewUserService(userRepo)
 	userHandler := users.NerUserHandler(userService, jwtMiddleware, authService)
 
+	dishRepo := dishes.NewDishRepository(db)
+	dishService := dishes.NewDishService(dishRepo)
+	dishHandler := dishes.NewDishHandler(dishService, jwtMiddleware)
+
 	router := chi.NewMux()
 	router.Route("/api/v1", func(r chi.Router) {
 		r.Use(middleware.Logger)
 		userHandler.UserRoutes(r)
+		dishHandler.DishRoutes(r)
 	})
 
 	server := http.Server{

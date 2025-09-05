@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/EduardoMark/gastro-api/internal/config"
+	"github.com/EduardoMark/gastro-api/internal/dishes"
 	"github.com/EduardoMark/gastro-api/internal/users"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -41,5 +42,6 @@ func New(env *config.Env) (*gorm.DB, error) {
 func Migrate(db *gorm.DB) error {
 	return db.AutoMigrate(
 		users.User{},
+		dishes.Dish{},
 	)
 }

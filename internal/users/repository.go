@@ -51,7 +51,10 @@ func (r *userRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*User, 
 
 	err := r.db.WithContext(ctx).First(&user, id).Error
 	if err != nil {
-		return nil, ErrUserNotFound
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
+		return nil, fmt.Errorf("GetUserByID - failed to find user: %v", err)
 	}
 
 	return &user, nil
@@ -65,7 +68,10 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*Use
 		First(&user).Error
 
 	if err != nil {
-		return nil, ErrUserNotFound
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
+		return nil, fmt.Errorf("GetUserByEmail - failed to find user: %v", err)
 	}
 
 	return &user, nil
