@@ -39,9 +39,11 @@ func main() {
 	dishService := dishes.NewDishService(dishRepo)
 	dishHandler := dishes.NewDishHandler(dishService, jwtMiddleware)
 
-	router := chi.NewMux()
+	router := chi.NewRouter()
 	router.Route("/api/v1", func(r chi.Router) {
 		r.Use(middleware.Logger)
+		r.Use(middleware.Recoverer)
+
 		userHandler.UserRoutes(r)
 		dishHandler.DishRoutes(r)
 	})

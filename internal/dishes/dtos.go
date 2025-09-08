@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/EduardoMark/gastro-api/internal/validation"
 	"github.com/go-playground/validator/v10"
 )
-
-var validate = validator.New()
 
 type CreateRequest struct {
 	Name        string  `json:"name" validate:"required,min=3,max=100"`
@@ -17,7 +16,7 @@ type CreateRequest struct {
 }
 
 func (r *CreateRequest) Validate() error {
-	if err := validate.Struct(r); err != nil {
+	if err := validation.Validate.Struct(r); err != nil {
 		for _, err := range err.(validator.ValidationErrors) {
 			if err.Tag() == "required" {
 				return fmt.Errorf("field %s is required", err.Field())
@@ -55,7 +54,7 @@ type UpdateRequest struct {
 }
 
 func (r *UpdateRequest) Validate() error {
-	if err := validate.Struct(r); err != nil {
+	if err := validation.Validate.Struct(r); err != nil {
 		for _, err := range err.(validator.ValidationErrors) {
 			if err.Tag() == "required" {
 				return fmt.Errorf("field %s is required", err.Field())

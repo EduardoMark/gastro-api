@@ -3,10 +3,9 @@ package users
 import (
 	"fmt"
 
+	"github.com/EduardoMark/gastro-api/internal/validation"
 	"github.com/go-playground/validator/v10"
 )
-
-var validate = validator.New()
 
 type SignupRequest struct {
 	Name     string `json:"name" validate:"required,min=3,max=100"`
@@ -16,7 +15,7 @@ type SignupRequest struct {
 }
 
 func (r SignupRequest) Validate() error {
-	if err := validate.Struct(r); err != nil {
+	if err := validation.Validate.Struct(r); err != nil {
 		for _, err := range err.(validator.ValidationErrors) {
 			if err.Tag() == "required" {
 				return fmt.Errorf("field %s is required", err.Field())
@@ -46,7 +45,7 @@ type LoginRequest struct {
 }
 
 func (r LoginRequest) Validate() error {
-	if err := validate.Struct(r); err != nil {
+	if err := validation.Validate.Struct(r); err != nil {
 		for _, err := range err.(validator.ValidationErrors) {
 			if err.Tag() == "required" {
 				return fmt.Errorf("field %s is required", err.Field())
@@ -70,7 +69,7 @@ type ChangePasswordRequest struct {
 }
 
 func (r ChangePasswordRequest) Validate() error {
-	if err := validate.Struct(r); err != nil {
+	if err := validation.Validate.Struct(r); err != nil {
 		for _, err := range err.(validator.ValidationErrors) {
 			if err.Tag() == "required" {
 				return fmt.Errorf("field %s is required", err.Field())
