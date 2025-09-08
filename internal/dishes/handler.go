@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/EduardoMark/gastro-api/internal/middleware"
+	"github.com/EduardoMark/gastro-api/internal/users"
 	"github.com/EduardoMark/gastro-api/pkg/jsonutils"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -24,18 +25,37 @@ func NewDishHandler(s Service, jwt *middleware.JWTMiddleware) DishHandler {
 
 func (h *DishHandler) DishRoutes(r chi.Router) {
 	r.Route("/dishes", func(r chi.Router) {
-		r.Use(h.jwt.JWTAuth)
-
-		r.Post("/", h.Create)
+		// publics
 		r.Get("/{id}", h.GetOne)
 		r.Get("/", h.Query)
-		r.Put("/{id}", h.Update)
-		r.Delete("/{id}", h.Delete)
+
+		// privates
+		r.Group(func(r chi.Router) {
+			r.Use(h.jwt.JWTAuth)
+
+			r.Post("/", h.Create)
+			r.Put("/{id}", h.Update)
+			r.Delete("/{id}", h.Delete)
+		})
 	})
 }
 
 func (h *DishHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	role, ok := ctx.Value(middleware.CtxUserRole).(string)
+	if !ok {
+		jsonutils.EncodeJson(w, http.StatusBadRequest, map[string]string{
+			"error": "user role not found",
+		})
+		return
+	}
+
+	if role != string(users.RoleAdmin) {
+		jsonutils.EncodeJson(w, http.StatusForbidden, map[string]string{
+			"error": "forbidden: admin only",
+		})
+		return
+	}
 
 	body, err := jsonutils.DecodeJson[CreateRequest](r)
 	if err != nil {
@@ -146,8 +166,22 @@ func (h *DishHandler) Query(w http.ResponseWriter, r *http.Request) {
 
 func (h *DishHandler) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	idRaw := chi.URLParam(r, "id")
+	role, ok := ctx.Value(middleware.CtxUserRole).(string)
+	if !ok {
+		jsonutils.EncodeJson(w, http.StatusBadRequest, map[string]string{
+			"error": "user role not found",
+		})
+		return
+	}
 
+	if role != string(users.RoleAdmin) {
+		jsonutils.EncodeJson(w, http.StatusForbidden, map[string]string{
+			"error": "forbidden: admin only",
+		})
+		return
+	}
+
+	idRaw := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idRaw)
 	if err != nil {
 		jsonutils.EncodeJson(w, http.StatusBadRequest, map[string]string{
@@ -192,8 +226,22 @@ func (h *DishHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 func (h *DishHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	idRaw := chi.URLParam(r, "id")
+	role, ok := ctx.Value(middleware.CtxUserRole).(string)
+	if !ok {
+		jsonutils.EncodeJson(w, http.StatusBadRequest, map[string]string{
+			"error": "user role not found",
+		})
+		return
+	}
 
+	if role != string(users.RoleAdmin) {
+		jsonutils.EncodeJson(w, http.StatusForbidden, map[string]string{
+			"error": "forbidden: admin only",
+		})
+		return
+	}
+
+	idRaw := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idRaw)
 	if err != nil {
 		jsonutils.EncodeJson(w, http.StatusBadRequest, map[string]string{
