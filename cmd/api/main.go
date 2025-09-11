@@ -11,6 +11,7 @@ import (
 	"github.com/EduardoMark/gastro-api/internal/database"
 	"github.com/EduardoMark/gastro-api/internal/dishes"
 	appmw "github.com/EduardoMark/gastro-api/internal/middleware"
+	"github.com/EduardoMark/gastro-api/internal/order"
 	"github.com/EduardoMark/gastro-api/internal/users"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -39,6 +40,10 @@ func main() {
 	dishService := dishes.NewDishService(dishRepo)
 	dishHandler := dishes.NewDishHandler(dishService, jwtMiddleware)
 
+	orderRepo := order.NewOrderRepository(db)
+	orderService := order.NewOrderService(orderRepo, dishRepo)
+	orderHandler := order.NewOrderHandler(orderService, *jwtMiddleware)
+
 	router := chi.NewRouter()
 	router.Route("/api/v1", func(r chi.Router) {
 		r.Use(middleware.Logger)
@@ -46,6 +51,7 @@ func main() {
 
 		userHandler.UserRoutes(r)
 		dishHandler.DishRoutes(r)
+		orderHandler.OrderRoutes(r)
 	})
 
 	server := http.Server{

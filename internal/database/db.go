@@ -6,6 +6,7 @@ import (
 
 	"github.com/EduardoMark/gastro-api/internal/config"
 	"github.com/EduardoMark/gastro-api/internal/dishes"
+	"github.com/EduardoMark/gastro-api/internal/order"
 	"github.com/EduardoMark/gastro-api/internal/users"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -43,5 +44,7 @@ func Migrate(db *gorm.DB) error {
 	return db.AutoMigrate(
 		users.User{},
 		dishes.Dish{},
+		order.Order{},
+		order.OrderItem{},
 	)
 }
